@@ -1,543 +1,334 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Check, ChevronRight, Clock, Download, HelpCircle, History, RefreshCcw, Settings, X } from "lucide-react";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>5학년 2학기 분수의 곱셈</title>
+<style>
+  :root{
+    --bg:#0b1020; --card:#121a2f; --fg:#e8eef9; --muted:#a7b6d6; --accent:#7dd3fc; --right:#34d399; --wrong:#f87171; --warn:#fbbf24;
+  }
+  *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:var(--bg);color:var(--fg);font-family: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", Segoe UI, Roboto, Helvetica, Arial}
+  .wrap{max-width:960px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1f2a44;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .p16{padding:16px} .p24{padding:24px} .p32{padding:32px}
+  h1,h2,h3{margin:0 0 12px} h1{font-size:28px} h2{font-size:22px} h3{font-size:18px}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 18px;border-radius:12px;border:1px solid #2a3a62;background:#17213b;color:var(--fg);cursor:pointer}
+  .btn:hover{filter:brightness(1.05)} .btn:active{transform:translateY(1px)} .btn.primary{background:#1b2950;border-color:#2d4483}
+  .btn.green{background:#123d2b;border-color:#2d8a64} .btn.red{background:#4a1a1a;border-color:#a44}
+  .btn[disabled]{opacity:.5;pointer-events:none}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .col{flex:1 1 220px}
+  input[type=text],select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #314168;background:#0f1730;color:var(--fg)}
+  .center{text-align:center}
+  .title{font-weight:800;font-size:26px;letter-spacing:1px}
+  .muted{color:var(--muted)}
+  .progress{display:flex;align-items:center;justify-content:space-between;margin-top:8px;color:#c6d1ea;font-size:14px}
+  .nav-arrows{position:sticky;bottom:0;display:flex;gap:10px;justify-content:space-between;margin-top:16px}
+  .arrow{flex:1;display:flex;justify-content:center;align-items:center;height:56px;border-radius:12px;background:#122044;border:1px solid #203363;font-size:18px}
+  .qnum{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#0e1833;border:1px solid #2b3f73;margin-right:8px}
+  .choices{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+  .choice{padding:14px 16px;border-radius:12px;border:1px solid #2b3f73;background:#0f1730;cursor:pointer}
+  .choice.sel{outline:2px solid var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border-radius:999px;border:1px solid #2b3f73;background:#0f1834;font-size:12px;color:#bfd0ff}
+  .fraction-input{display:flex;align-items:center;gap:10px;justify-content:center;margin:12px auto}
+  .box{background:#0f1730;border:1px solid #2b3f73;border-radius:10px;padding:8px 10px;min-width:68px;text-align:center;font-size:20px}
+  .box.small{min-width:56px}
+  .slash{width:16px;text-align:center;opacity:.8}
+  .keypad{position:sticky;bottom:0;background:#0a1228;border:1px solid #203363;border-radius:14px;margin-top:14px;padding:10px}
+  .grid{display:grid;gap:8px}
+  .grid.num{grid-template-columns:repeat(5,1fr)}
+  .kbtn{height:52px;border-radius:10px;border:1px solid #2b3f73;background:#0f1730;color:var(--fg);font-size:18px}
+  .kbtn.wide{grid-column:span 2}
+  .kbtn.green{background:#0f2a22}
+  .kbtn.red{background:#2b1515}
+  .tag{font-size:12px;color:#9ab0df}
+  .result-good{color:var(--right)} .result-bad{color:var(--wrong)}
+  table{width:100%;border-collapse:collapse} th,td{padding:10px;border-bottom:1px solid #23345f}
+  .sticky-top{position:sticky;top:0;background:linear-gradient(180deg, rgba(11,16,32,1) 0%, rgba(11,16,32,.92) 70%, rgba(11,16,32,0) 100%);padding-top:12px;margin-top:-12px;z-index:5}
+  @media (min-width:720px){.choices{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="p16" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="title">5학년 2학기 분수의 곱셈</div>
+      <div class="pill">태블릿 최적화 • 오프라인 사용 가능</div>
+    </header>
 
-/**
- * 초등 수학 문제 맞추기 (Single-file React)
- * - 모드: 사칙연산, 구구단, 비교(>, <, =), 혼합
- * - 난이도: 자리수/범위 슬라이더
- * - 시간제한 모드, 즉시 채점, 힌트, 오답노트, 연속정답(스트릭)
- * - 로컬 저장: 설정/히스토리/오답노트
- * - 결과 내보내기: CSV
- *
- * Tailwind + shadcn/ui + framer-motion 사용
- */
+    <main id="app" class="p16"></main>
+  </div>
 
-type Mode = "arithmetic" | "multiplication" | "compare" | "mixed";
+<script>
+// ---------- 유틸 ----------
+const $ = sel => document.querySelector(sel);
+const h = (tag, attrs={}, ...children) => { const el = document.createElement(tag); for (const k in attrs){ if(k==='class') el.className=attrs[k]; else if(k.startsWith('on') && typeof attrs[k]==='function') el.addEventListener(k.slice(2), attrs[k]); else if(k==='html') el.innerHTML=attrs[k]; else el.setAttribute(k, attrs[k]); } children.flat().forEach(c=> el.append(c instanceof Node? c : document.createTextNode(String(c)))); return el; };
 
-type Problem = {
-  id: string;
-  text: string; // 표시용
-  answer: number | string; // 비교 모드에서 '=' 포함 가능
-  meta: {
-    a?: number;
-    b?: number;
-    op?: "+" | "-" | "×" | "÷";
-    mode: Mode;
-    range: number;
-  };
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
+function toImproper(whole, num, den){ whole=Number(whole||0); num=Number(num||0); den=Number(den||0); if(!den) return null; const sign = (whole<0||num<0)?-1:1; const n = Math.abs(whole)*den + Math.abs(num); return [sign*n, den]; }
+function reduce(n,d){ if(d===0) return null; const g=gcd(n,d); const nn = d<0? -n: n; const dd = Math.abs(d); const g2=gcd(nn,dd); return [nn/g2, dd/g2]; }
+function parseFractionInput(obj){ // {whole,num,den}
+  const {whole,num,den} = obj;
+  // 허용: 정수만 입력(den 비어있으면 1)
+  if((den===''||den==null) && (num===''||num==null)){
+    if(whole===''||whole==null) return null; return [Number(whole),1];
+  }
+  if(!den || Number(den)===0) return null;
+  const [n,d]=toImproper(whole||0, num||0, den||1);
+  if(n==null) return null; return reduce(n,d);
+}
+function fracEq(a,b){ return a[0]===b[0] && a[1]===b[1]; }
+function fracStr([n,d]){ if(d===1) return String(n); const sign = n<0?'-':''; const nn=Math.abs(n); const whole = Math.floor(nn/d); const rem = nn % d; if(whole>0 && rem>0) return `${sign}${whole} ${rem}/${d}`; if(whole>0 && rem===0) return `${sign}${whole}`; return `${sign}${nn}/${d}`; }
+function toNormFraction(v){ // accepts 'a/b' string or number
+  if(typeof v==='string' && v.includes('/')){
+    const [a,b]=v.split('/').map(Number); return reduce(a,b);
+  } else if(typeof v==='number'){
+    // convert decimal to fraction (2 decimal places safe here)
+    const s = v.toString(); if(!s.includes('.')) return [v,1];
+    const digits = s.split('.')[1].length; const den = 10**Math.min(4,digits);
+    return reduce(Math.round(v*den), den);
+  } else if(Array.isArray(v)) return reduce(v[0], v[1]);
+  return null;
+}
+
+// ---------- 문제 세트 ----------
+// 유형: fraction(분수입력), mc(객관식), sign(>,=,< 셋 중), count(자연수 개수)
+const QUESTIONS = [
+  {id:1,  type:'fraction', text:'1) 7 × 5/6 (정답은 기약분수로)', correct:'35/6'},
+  {id:2,  type:'fraction', text:'2) 5/8 × 4/9 (정답은 기약분수로)', correct:'5/18'},
+  {id:3,  type:'fraction', text:'3) 2 1/3 × 3 1/2 (정답은 기약분수로)', correct:'49/6'},
+  {id:4,  type:'fraction', text:'4) 9/10 × 2/3 (정답은 기약분수로)', correct:'3/5'},
+  {id:5,  type:'fraction', text:'5) 1 3/5 × 5/8 (정답은 기약분수로)', correct:'1'},
+  {id:6,  type:'fraction', text:'6) 2/3 × 3/4 × 4/5 (정답은 기약분수로)', correct:'2/5'},
+  {id:7,  type:'fraction', text:'7) 7/9 × 9/14 × 2/3 (정답은 기약분수로)', correct:'1/3'},
+  {id:8,  type:'mc', text:'8) 계산이 잘못된 식을 고르세요.', choices:["2/3 × 6 = 4","6 × 2/3 = 3","5/6 × 12 = 10","4/5 × 15 = 12"], answer:0},
+  {id:9,  type:'mc', text:'9) 3/5 × □ = 9/10 에서 □ ?', choices:["1 1/2","1 2/3","1 3/4","2"], answer:1},
+  {id:10, type:'mc', text:'10) 6의 5/8과 다른 수를 고르세요.', choices:["6 × 5/8","3/4 × 5","5/8 × 6","3/5 × 6"], answer:3},
+  {id:11, type:'sign', text:'11) 3 × 3/5 ○ 4 × 2/5', choices:[">","=","<"], answer:1},
+  {id:12, type:'mc', text:'12) 3/5 × □ < 2 1/2, 가능한 자연수 개수?', choices:["3","4","5","6"], answer:1},
+  {id:13, type:'mc', text:'13) 리본 20m의 3/5 사용. 길이는?', choices:["10","11","12","13","14"], answer:2},
+  {id:14, type:'mc', text:'14) 1kg로 2/3kg 빵. 밀가루 8kg로 몇 개?', choices:["10","11","12","13"], answer:2},
+  {id:15, type:'mc', text:'15) 달 중력은 지구의 1/6. 72kg → ?', choices:["10","12","14","18"], answer:1},
+  {id:16, type:'mc', text:'16) 18쪽의 2/3 읽음. 남은 쪽수?', choices:["4","5","6","7"], answer:2},
+  {id:17, type:'mc', text:'17) 한 상자 1 1/3kg 귤 × 6상자 = ?', choices:["7","8","8 1/2","9"], answer:1},
+  {id:18, type:'mc', text:'18) 2L의 3/8 마심 → 남은 것의 2/3를 친구에게 줌. 준 양은?', choices:["1/2 L","3/5 L","5/6 L","4/5 L"], answer:2},
+  {id:19, type:'mc', text:'19) 2시간에 6km 걷는 속도. 1.5시간 동안 거리?', choices:["4","4 1/2","5","5 1/2"], answer:1},
+  {id:20, type:'mc', text:'20) 튀어오름 비율 3/5, 높이 4m → 2번째 튀어오른 높이?', choices:["1.44","1.6","1.8","2.0"], answer:0}
+];
+
+// 정답 표준화
+for(const q of QUESTIONS){
+  if(q.type==='fraction') q.correct = toNormFraction(q.correct);
+}
+
+let STATE = {
+  page: 'intro', // intro | info | exam | review
+  index: 0, // 0..19
+  student: {school:'', grade:'', klass:'', number:'', name:''},
+  answers: Array(QUESTIONS.length).fill(null),
+  times: Array(QUESTIONS.length).fill(0),
+  startedAt: null,
 };
 
-type HistoryItem = {
-  id: string;
-  text: string;
-  user: string;
-  correct: boolean;
-  answer: string | number;
-  timeMs: number;
-  ts: number; // epoch ms
-};
+function save(){ localStorage.setItem('fm_exam_v1', JSON.stringify(STATE)); }
+function load(){ const raw = localStorage.getItem('fm_exam_v1'); if(!raw) return; try{ const s=JSON.parse(raw); STATE={...STATE, ...s}; }catch{} }
+load();
 
-type SettingsState = {
-  mode: Mode;
-  range: number; // 최대 수 범위 (10~9999)
-  allowNegative: boolean; // 뺄셈에서 음수 결과 허용
-  timeLimit: boolean;
-  secondsPerQ: number; // 문제당 제한시간
-  instantCheck: boolean; // 입력 즉시 채점
-  questionCount: number; // 세트 문제 수
-};
+function startTimer(){ STATE.startedAt = Date.now(); }
+function stopTimer(i){ if(STATE.startedAt){ STATE.times[i] += (Date.now()-STATE.startedAt); STATE.startedAt=null; } }
 
-const DEFAULT_SETTINGS: SettingsState = {
-  mode: "mixed",
-  range: 50,
-  allowNegative: false,
-  timeLimit: false,
-  secondsPerQ: 20,
-  instantCheck: true,
-  questionCount: 10,
-};
+// ---------- 렌더러 ----------
+const app = $('#app');
 
-const STORAGE_KEYS = {
-  settings: "mathquiz_settings_v1",
-  history: "mathquiz_history_v1",
-  wrongbook: "mathquiz_wrongbook_v1",
-} as const;
-
-function saveLocal<T>(key: string, value: T) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-}
-function loadLocal<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch { return fallback; }
+function render(){ app.innerHTML='';
+  if(STATE.page==='intro') return renderIntro();
+  if(STATE.page==='info') return renderInfo();
+  if(STATE.page==='exam') return renderExam();
+  if(STATE.page==='review') return renderReview();
 }
 
-function rng(max: number) { return Math.floor(Math.random() * (max + 1)); }
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
-
-function makeId() { return Math.random().toString(36).slice(2, 10); }
-
-function generateArithmetic(range: number, allowNegative: boolean): Problem {
-  const ops: Array<"+"|"-"|"×"|"÷"> = ["+","-","×","÷"];
-  const op = pick(ops);
-  let a = rng(range);
-  let b = rng(range);
-  if (op === "÷") {
-    // 나눗셈: 나누어떨어지도록 구성
-    b = Math.max(1, rng(Math.max(1, Math.floor(range/3))));
-    a = b * rng(Math.max(1, Math.floor(range/3)));
-  }
-  if (op === "-" && !allowNegative && a < b) [a, b] = [b, a];
-  const text = `${a} ${op} ${b}`;
-  let answer: number;
-  switch (op) {
-    case "+": answer = a + b; break;
-    case "-": answer = a - b; break;
-    case "×": answer = a * b; break;
-    case "÷": answer = b === 0 ? 0 : a / b; break;
-  }
-  return { id: makeId(), text, answer, meta: { a, b, op, mode: "arithmetic", range } };
-}
-
-function generateMultiplication(range: number): Problem {
-  const a = rng(Math.max(2, Math.min(9, range)));
-  const b = rng(Math.max(2, Math.min(9, range)));
-  const text = `${a} × ${b}`;
-  return { id: makeId(), text, answer: a*b, meta: { a, b, op: "×", mode: "multiplication", range } };
-}
-
-function generateCompare(range: number): Problem {
-  const a = rng(range);
-  const b = rng(range);
-  let answer: ">" | "<" | "=" = a>b?">": a<b?"<":"=";
-  const text = `${a}  [ ?, >, <, = ]  ${b}`;
-  return { id: makeId(), text, answer, meta: { a, b, mode: "compare", range } };
-}
-
-function generateProblem(st: SettingsState): Problem {
-  const mode = st.mode === "mixed" ? pick(["arithmetic","multiplication","compare"]) : st.mode;
-  if (mode === "arithmetic") return generateArithmetic(st.range, st.allowNegative);
-  if (mode === "multiplication") return generateMultiplication(st.range);
-  if (mode === "compare") return generateCompare(st.range);
-  return generateArithmetic(st.range, st.allowNegative);
-}
-
-function toCSV(rows: Array<Record<string,string|number>>): string {
-  const keys = Object.keys(rows[0] ?? {});
-  const esc = (v: any) => `"${String(v).replaceAll("\"","\"\"")}"`;
-  return [keys.join(","), ...rows.map(r => keys.map(k => esc(r[k] ?? "")).join(","))].join("\n");
-}
-
-const Pill: React.FC<{children: React.ReactNode, className?: string}> = ({children, className}) => (
-  <span className={`px-2 py-0.5 rounded-full text-xs border bg-white/5 ${className??""}`}>{children}</span>
-);
-
-export default function App() {
-  const [settings, setSettings] = useState<SettingsState>(() => loadLocal(STORAGE_KEYS.settings, DEFAULT_SETTINGS));
-  const [current, setCurrent] = useState<Problem>(() => generateProblem(DEFAULT_SETTINGS));
-  const [user, setUser] = useState("");
-  const [count, setCount] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [history, setHistory] = useState<HistoryItem[]>(() => loadLocal(STORAGE_KEYS.history, [] as HistoryItem[]));
-  const [wrongbook, setWrongbook] = useState<HistoryItem[]>(() => loadLocal(STORAGE_KEYS.wrongbook, [] as HistoryItem[]));
-  const [secondsLeft, setSecondsLeft] = useState(settings.secondsPerQ);
-  const [running, setRunning] = useState(false);
-  const [input, setInput] = useState("");
-  const [showResult, setShowResult] = useState(false);
-  const [lastItem, setLastItem] = useState<HistoryItem|undefined>(undefined);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const startedAtRef = useRef<number>(Date.now());
-
-  // 지속 저장
-  useEffect(() => saveLocal(STORAGE_KEYS.settings, settings), [settings]);
-  useEffect(() => saveLocal(STORAGE_KEYS.history, history), [history]);
-  useEffect(() => saveLocal(STORAGE_KEYS.wrongbook, wrongbook), [wrongbook]);
-
-  // 타이머
-  useEffect(() => {
-    if (!running || !settings.timeLimit) return;
-    setSecondsLeft(settings.secondsPerQ);
-    const t = setInterval(() => setSecondsLeft(s => s-1), 1000);
-    return () => clearInterval(t);
-  }, [current.id, running, settings.timeLimit, settings.secondsPerQ]);
-
-  useEffect(() => {
-    if (!running || !settings.timeLimit) return;
-    if (secondsLeft <= 0) {
-      handleSubmit(true); // 시간초과는 오답 처리
-    }
-  }, [secondsLeft]);
-
-  useEffect(() => { if (running) inputRef.current?.focus(); }, [running, current.id]);
-
-  const accuracy = useMemo(() => count===0?0:Math.round((correctCount/count)*100), [count, correctCount]);
-
-  function nextProblem(resetTimer=true) {
-    setCurrent(generateProblem(settings));
-    setInput("");
-    if (resetTimer && settings.timeLimit) setSecondsLeft(settings.secondsPerQ);
-    startedAtRef.current = Date.now();
-  }
-
-  function normalizeUserInput(): string {
-    const raw = input.trim();
-    if (current.meta.mode === "compare") {
-      if ([">","<","="].includes(raw)) return raw;
-      if (["gt","greater","크다"].includes(raw.toLowerCase())) return ">";
-      if (["lt","less","작다"].includes(raw.toLowerCase())) return "<";
-      if (["eq","equal","같다","="] as string[]).includes(raw.toLowerCase())) return "=";
-      return raw;
-    }
-    // 숫자만 남기기(부호, 소수점 허용)
-    return raw.replace(/[\s,]/g, "");
-  }
-
-  function checkCorrect(userAnswer: string): boolean {
-    if (current.meta.mode === "compare") return userAnswer === String(current.answer);
-    const num = Number(userAnswer);
-    return Number.isFinite(num) && Math.abs(num - Number(current.answer)) < 1e-9;
-  }
-
-  function handleSubmit(timeout=false) {
-    const elapsed = Date.now() - startedAtRef.current;
-    const userAnswer = timeout? "(시간초과)" : normalizeUserInput();
-    const correct = !timeout && checkCorrect(userAnswer);
-
-    const item: HistoryItem = {
-      id: current.id,
-      text: current.text,
-      user: userAnswer,
-      correct,
-      answer: current.answer,
-      timeMs: elapsed,
-      ts: Date.now(),
-    };
-
-    setHistory(h => [item, ...h].slice(0, 2000));
-    if (!correct) setWrongbook(w => [item, ...w].slice(0, 1000));
-
-    setCount(c => c+1);
-    setCorrectCount(c => c + (correct?1:0));
-    setStreak(s => correct? s+1 : 0);
-    setLastItem(item);
-    setShowResult(true);
-
-    // 다음 문제 예열
-    setTimeout(() => {
-      setShowResult(false);
-      nextProblem();
-    }, 700);
-  }
-
-  function startSession() {
-    setRunning(true);
-    setCount(0);
-    setCorrectCount(0);
-    setStreak(0);
-    nextProblem();
-  }
-
-  function stopSession() { setRunning(false); }
-
-  function onInstantInput(val: string) {
-    setInput(val);
-    if (settings.instantCheck && running) {
-      const ok = checkCorrect(val.trim());
-      if (ok) handleSubmit(false);
-    }
-  }
-
-  function downloadCSV() {
-    if (history.length === 0) return;
-    const rows = history.map((h,i) => ({
-      idx: history.length - i,
-      when: new Date(h.ts).toLocaleString(),
-      text: h.text,
-      user: h.user,
-      correct: h.correct ? "O" : "X",
-      answer: h.answer,
-      time_ms: h.timeMs,
-    }));
-    const csv = toCSV(rows);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `mathquiz_${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function redoWrong() {
-    if (wrongbook.length === 0) return;
-    const w = wrongbook[0];
-    // 간단 복원: 텍스트 파싱 (학습용)
-    let p: Problem | null = null;
-    if (String(w.answer) === ">" || String(w.answer) === "<" || String(w.answer) === "=") {
-      p = { id: makeId(), text: w.text, answer: w.answer, meta: { mode: "compare", range: settings.range } } as Problem;
-    } else {
-      p = { id: makeId(), text: w.text, answer: Number(w.answer), meta: { mode: "arithmetic", range: settings.range } } as Problem;
-    }
-    setCurrent(p);
-    setInput("");
-    setRunning(true);
-    startedAtRef.current = Date.now();
-  }
-
-  return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-sky-900 via-slate-900 to-indigo-950 text-slate-100 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto grid gap-4 md:gap-6">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="bg-white/10">초등 수학</Badge>
-            <h1 className="text-2xl md:text-3xl font-bold">문제 맞추기</h1>
-            <Pill>v1.0</Pill>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={downloadCSV}>
-              <Download className="w-4 h-4 mr-2"/>기록 내보내기
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => redoWrong()} disabled={wrongbook.length===0}>
-              <History className="w-4 h-4 mr-2"/>오답 다시풀기 ({wrongbook.length})
-            </Button>
-          </div>
-        </header>
-
-        {/* 대시보드 */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="bg-white/5 border-white/10 md:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2"><Clock className="w-5 h-5"/>진행판</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-                <Pill>문제 수: {count}</Pill>
-                <Pill>정답: {correctCount}</Pill>
-                <Pill>정확도: {accuracy}%</Pill>
-                <Pill>연속 정답: {streak}</Pill>
-                {settings.timeLimit && (
-                  <Pill className={secondsLeft<=5?"bg-red-500/20 border-red-500/40 text-red-100":""}>
-                    남은 시간: {secondsLeft}s
-                  </Pill>
-                )}
-              </div>
-
-              {/* 문제 카드 */}
-              <motion.div layout initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} key={current.id}>
-                <Card className="bg-slate-900/60 border-white/10">
-                  <CardContent className="py-8">
-                    <div className="text-center">
-                      <div className="text-sm uppercase tracking-widest text-slate-400 mb-2">현재 문제</div>
-                      <div className="text-4xl md:text-6xl font-extrabold drop-shadow">
-                        {current.text}
-                      </div>
-                      <div className="mt-6 flex items-center justify-center gap-2">
-                        {current.meta.mode === "compare" ? (
-                          <Select value={input} onValueChange={onInstantInput}>
-                            <SelectTrigger className="w-40">
-                              <SelectValue placeholder="정답 선택" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value=">">{">"}</SelectItem>
-                              <SelectItem value="=">{"="}</SelectItem>
-                              <SelectItem value="<">{"<"}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            ref={inputRef}
-                            inputMode="numeric"
-                            placeholder="답을 입력하세요"
-                            value={input}
-                            onChange={e => onInstantInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(false); }}
-                            className="text-center text-2xl max-w-xs mx-auto"
-                          />
-                        )}
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-center gap-2">
-                        <Button onClick={() => handleSubmit(false)} className="gap-2"><Check className="w-4 h-4"/>제출</Button>
-                        <Button variant="secondary" onClick={() => nextProblem()} className="gap-2"><RefreshCcw className="w-4 h-4"/>다른문제</Button>
-                      </div>
-                    </div>
-                  </CardContent>
-
-                  {showResult && lastItem && (
-                    <CardFooter className="border-t border-white/10 bg-black/20">
-                      <div className="w-full flex items-center justify-between text-sm">
-                        <div className={`flex items-center gap-2 ${lastItem.correct?"text-emerald-300":"text-rose-300"}`}>
-                          {lastItem.correct ? <Check className="w-4 h-4"/> : <X className="w-4 h-4"/>}
-                          {lastItem.correct ? "정답!" : `오답: 정답은 ${lastItem.answer}`}
-                        </div>
-                        <div className="text-slate-300">소요: {(lastItem.timeMs/1000).toFixed(1)}s</div>
-                      </div>
-                    </CardFooter>
-                  )}
-                </Card>
-              </motion.div>
-
-              <div className="flex items-center justify-between">
-                {!running ? (
-                  <Button size="lg" onClick={startSession} className="gap-2"><ChevronRight className="w-5 h-5"/>시작</Button>
-                ) : (
-                  <Button size="lg" variant="destructive" onClick={stopSession} className="gap-2"><X className="w-5 h-5"/>종료</Button>
-                )}
-                <div className="text-xs text-slate-400 flex items-center gap-2"><HelpCircle className="w-4 h-4"/>Enter로 제출, 비교 모드는 기호 선택</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 설정 패널 */}
-          <Card className="bg-white/5 border-white/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5"/>설정</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div>
-                <div className="mb-1 text-slate-300">모드</div>
-                <Select value={settings.mode} onValueChange={(v: Mode) => setSettings(s => ({...s, mode: v}))}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mixed">혼합</SelectItem>
-                    <SelectItem value="arithmetic">사칙연산</SelectItem>
-                    <SelectItem value="multiplication">구구단</SelectItem>
-                    <SelectItem value="compare">비교(>,<,=)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <div className="mb-1 text-slate-300">수 범위 (최댓값: {settings.range})</div>
-                <Slider value={[settings.range]} min={10} max={999} step={1} onValueChange={([v]) => setSettings(s => ({...s, range: v}))} />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-slate-300">뺄셈 음수 허용</div>
-                <Switch checked={settings.allowNegative} onCheckedChange={(v) => setSettings(s => ({...s, allowNegative: v}))} />
-              </div>
-
-              <Separator className="bg-white/10" />
-
-              <div className="flex items-center justify-between">
-                <div className="text-slate-300">문제당 시간 제한</div>
-                <Switch checked={settings.timeLimit} onCheckedChange={(v) => setSettings(s => ({...s, timeLimit: v}))} />
-              </div>
-              {settings.timeLimit && (
-                <div>
-                  <div className="mb-1 text-slate-300">초(문제당): {settings.secondsPerQ}s</div>
-                  <Slider value={[settings.secondsPerQ]} min={5} max={60} step={1} onValueChange={([v]) => setSettings(s => ({...s, secondsPerQ: v}))} />
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <div className="text-slate-300">즉시 채점 (정답이면 자동 다음)</div>
-                <Switch checked={settings.instantCheck} onCheckedChange={(v) => setSettings(s => ({...s, instantCheck: v}))} />
-              </div>
-
-              <div>
-                <div className="mb-1 text-slate-300">세트 문제 수: {settings.questionCount} (표시용)</div>
-                <Slider value={[settings.questionCount]} min={5} max={50} step={1} onValueChange={([v]) => setSettings(s => ({...s, questionCount: v}))} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 히스토리 탭 */}
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader>
-            <CardTitle>기록 & 오답노트</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="history">
-              <TabsList className="mb-4">
-                <TabsTrigger value="history">기록</TabsTrigger>
-                <TabsTrigger value="wrong">오답노트</TabsTrigger>
-              </TabsList>
-              <TabsContent value="history">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-slate-300">
-                      <tr className="border-b border-white/10">
-                        <th className="text-left p-2">#</th>
-                        <th className="text-left p-2">문제</th>
-                        <th className="text-left p-2">내 답</th>
-                        <th className="text-left p-2">정답</th>
-                        <th className="text-left p-2">정오</th>
-                        <th className="text-left p-2">시간(s)</th>
-                        <th className="text-left p-2">시각</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.slice(0, 200).map((h, i) => (
-                        <tr key={h.id+"_"+i} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="p-2">{history.length - i}</td>
-                          <td className="p-2 font-mono">{h.text}</td>
-                          <td className="p-2">{String(h.user)}</td>
-                          <td className="p-2">{String(h.answer)}</td>
-                          <td className="p-2">{h.correct? <span className="text-emerald-300">O</span> : <span className="text-rose-300">X</span>}</td>
-                          <td className="p-2">{(h.timeMs/1000).toFixed(1)}</td>
-                          <td className="p-2">{new Date(h.ts).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </TabsContent>
-              <TabsContent value="wrong">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-slate-300">
-                      <tr className="border-b border-white/10">
-                        <th className="text-left p-2">#</th>
-                        <th className="text-left p-2">문제</th>
-                        <th className="text-left p-2">내 답</th>
-                        <th className="text-left p-2">정답</th>
-                        <th className="text-left p-2">시간(s)</th>
-                        <th className="text-left p-2">다시 풀기</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {wrongbook.slice(0, 200).map((h, i) => (
-                        <tr key={h.id+"_w_"+i} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="p-2">{wrongbook.length - i}</td>
-                          <td className="p-2 font-mono">{h.text}</td>
-                          <td className="p-2">{String(h.user)}</td>
-                          <td className="p-2">{String(h.answer)}</td>
-                          <td className="p-2">{(h.timeMs/1000).toFixed(1)}</td>
-                          <td className="p-2">
-                            <Button size="sm" variant="secondary" onClick={() => {
-                              const p: Problem = {
-                                id: makeId(), text: h.text, answer: h.answer, meta: { mode: (String(h.answer) === ">" || String(h.answer) === "<" || String(h.answer) === "=")?"compare":"arithmetic", range: settings.range }
-                              } as Problem;
-                              setCurrent(p); setInput(""); setRunning(true); startedAtRef.current = Date.now();
-                            }}>다시</Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <footer className="text-center text-xs text-slate-400 py-4">
-          © 2025 Q P • 수업용 깃허브 페이지 배포 OK • 로컬에서 설정/기록 저장
-        </footer>
-      </div>
-    </div>
+function renderIntro(){
+  const box = h('div',{class:'card p32 center'},
+    h('div',{class:'title', html:'5학년 2학기 <b>분수의 곱셈</b>'}),
+    h('p',{class:'muted'},'시험 시작 버튼을 누르세요.'),
+    h('div',{style:'height:10px'}),
+    h('button',{class:'btn primary', onClick:()=>{ STATE.page='info'; save(); render(); }},'시험 시작')
   );
+  app.append(box);
 }
+
+function renderInfo(){
+  const f = h('div',{class:'card p24'},
+    h('h2',{},'학생 정보 입력'),
+    h('div',{class:'row',style:'margin-top:8px'},
+      h('div',{class:'col'}, h('label',{},'학교'), h('input',{type:'text',value:STATE.student.school,oninput:e=>{STATE.student.school=e.target.value;save();}})),
+      h('div',{class:'col'}, h('label',{},'학년'), h('input',{type:'text',value:STATE.student.grade,oninput:e=>{STATE.student.grade=e.target.value;save();}})),
+      h('div',{class:'col'}, h('label',{},'반'), h('input',{type:'text',value:STATE.student.klass,oninput:e=>{STATE.student.klass=e.target.value;save();}})),
+      h('div',{class:'col'}, h('label',{},'번호'), h('input',{type:'text',value:STATE.student.number,oninput:e=>{STATE.student.number=e.target.value;save();}})),
+      h('div',{class:'col'}, h('label',{},'이름'), h('input',{type:'text',value:STATE.student.name,oninput:e=>{STATE.student.name=e.target.value;save();}})),
+    ),
+    h('div',{class:'progress'}, h('div',{},'입력 완료 후 시작을 누르세요.'), h('div',{class:'pill'},'총 문항 20')),
+    h('div',{style:'height:12px'}),
+    h('button',{class:'btn primary', onClick:()=>{ STATE.page='exam'; STATE.index=0; startTimer(); save(); render(); }},'시험 시작')
+  );
+  app.append(f);
+}
+
+function renderExam(){
+  const i = STATE.index; const q = QUESTIONS[i];
+  const head = h('div',{class:'sticky-top'},
+    h('div',{class:'card p16'},
+      h('div',{}, h('span',{class:'qnum'}, String(i+1)), h('b',{}, q.text)),
+      (q.type==='fraction' ? h('div',{class:'tag', html:'[안내] 1~7번의 답은 <b>기약분수</b>로 제출하세요.'}) : null),
+      h('div',{class:'progress'}, h('div',{},`진행 ${i+1}/20`), h('div',{}, `${STATE.student.school||''} ${STATE.student.grade||''}-${STATE.student.klass||''} ${STATE.student.number||''} ${STATE.student.name||''}`))
+    )
+  );
+
+  const body = h('div',{class:'card p24'});
+
+  // 답 렌더
+  let answerView = null;
+  if(q.type==='mc' || q.type==='sign'){
+    const ans = STATE.answers[i];
+    const box = h('div',{class:'choices'});
+    q.choices.forEach((c,idx)=>{
+      const item = h('div',{class:'choice'+(ans===idx?' sel':''), onClick:()=>{ STATE.answers[i]=idx; save(); render(); }}, c);
+      box.append(item);
+    });
+    answerView = box;
+  }
+  if(q.type==='fraction'){
+    const raw = STATE.answers[i] || {whole:'', num:'', den:''};
+    const fracBox = FractionInput(raw, (val)=>{ STATE.answers[i]=val; save(); });
+    answerView = fracBox;
+  }
+
+  body.append(answerView||h('div',{},''));
+
+  // 네비게이션
+  const nav = h('div',{class:'nav-arrows'},
+    h('button',{class:'arrow', onClick:()=>{ stopTimer(i); STATE.index=Math.max(0,STATE.index-1); startTimer(); save(); render(); }}, '← 이전'),
+    (i===QUESTIONS.length-1 ?
+      h('button',{class:'arrow', onClick:()=>{ stopTimer(i); STATE.page='review'; save(); render(); }}, '제출') :
+      h('button',{class:'arrow', onClick:()=>{ stopTimer(i); STATE.index=Math.min(QUESTIONS.length-1,STATE.index+1); startTimer(); save(); render(); }}, '다음 →')
+    )
+  );
+
+  app.append(head, h('div',{style:'height:10px'}), body, nav, Keypad(i));
+}
+
+function renderReview(){
+  // 채점
+  const results = QUESTIONS.map((q,idx)=>{
+    let correct=false, myDisp='', corrDisp='';
+    if(q.type==='mc' || q.type==='sign'){
+      const my = STATE.answers[idx];
+      correct = (my===q.answer);
+      myDisp = (my==null?'(무응답)': q.choices[my]);
+      corrDisp = q.choices[q.answer];
+    } else if(q.type==='fraction'){
+      const my = STATE.answers[idx];
+      const corr = q.correct; corrDisp = fracStr(corr);
+      if(my && my.den!=0){ const p = parseFractionInput(my); if(p){ const pr = reduce(p[0],p[1]); correct = fracEq(pr, corr); myDisp = fracStr(pr); } else { myDisp='(무효 입력)'; }
+      } else { myDisp='(무응답)'; }
+    }
+    return {idx, correct, myDisp, corrDisp, time: Math.round((STATE.times[idx]||0)/100)/10};
+  });
+  const score = results.reduce((s,r)=> s + (r.correct?5:0), 0);
+
+  const box = h('div',{class:'card p24'},
+    h('h2',{},'결과 확인'),
+    h('div',{class:'row',style:'margin:8px 0'},
+      h('div',{class:'pill'},`점수 ${score}/100`),
+      h('div',{class:'pill'},`정답 ${results.filter(r=>r.correct).length}/20`),
+      h('div',{class:'pill'}, new Date().toLocaleString('ko-KR'))
+    ),
+    h('div',{style:'overflow:auto'},
+      h('table',{},
+        h('thead',{}, h('tr',{}, h('th',{},'번호'), h('th',{},'내 답'), h('th',{},'정답'), h('th',{},'정오'), h('th',{},'시간(s)') )),
+        h('tbody',{}, results.map(r=> h('tr',{}, h('td',{}, String(r.idx+1)), h('td',{}, r.myDisp), h('td',{}, r.corrDisp), h('td',{}, r.correct? 'O':'X'), h('td',{}, String(r.time)) )))
+      )
+    ),
+    h('div',{class:'row',style:'margin-top:14px'},
+      h('button',{class:'btn', onClick:()=>{ STATE.page='exam'; STATE.index=0; save(); render(); }},'돌아가서 확인'),
+      h('button',{class:'btn green', onClick:()=> downloadCSV(results, score) },'CSV 내보내기'),
+      h('button',{class:'btn red', onClick:()=>{ localStorage.removeItem('fm_exam_v1'); location.reload(); }},'초기화')
+    )
+  );
+  app.append(box);
+}
+
+// ---------- 분수 입력 컴포넌트 ----------
+function FractionInput(current, onChange){
+  const state = { whole: current.whole||'', num: current.num||'', den: current.den||'', focus:'whole' };
+  const container = h('div',{});
+
+  const label = h('div',{class:'center muted'},'대분수 입력 지원: [정수] [분자]/[분모]');
+  const row = h('div',{class:'fraction-input'},
+    h('input',{class:'box small', type:'text', inputmode:'numeric', placeholder:'정수', value:state.whole, oninput:e=>{state.whole=e.target.value.replace(/[^0-9-]/g,''); onChange(state);} }),
+    h('div',{class:'slash'},''),
+    h('input',{class:'box small', type:'text', inputmode:'numeric', placeholder:'분자', value:state.num, oninput:e=>{state.num=e.target.value.replace(/[^0-9]/g,''); onChange(state);} }),
+    h('div',{class:'slash'},'—'),
+    h('input',{class:'box small', type:'text', inputmode:'numeric', placeholder:'분모', value:state.den, oninput:e=>{state.den=e.target.value.replace(/[^0-9]/g,''); onChange(state);} })
+  );
+  container.append(label,row);
+  return container;
+}
+
+// ---------- 키패드 ----------
+function Keypad(qIndex){
+  const q = QUESTIONS[qIndex];
+  // 분수 문제에만 숫자 키패드 표시, 그 외에는 네비만
+  if(q.type!=='fraction') return h('div',{});
+
+  const kp = h('div',{class:'keypad'},
+    h('div',{class:'grid num'},
+      ...['1','2','3','4','5','6','7','8','9','0'].map(v=> h('button',{class:'kbtn', onClick:()=> pushNum(v)}, v)),
+      h('button',{class:'kbtn', onClick:()=> moveFocus()},'분자↔분모'),
+      h('button',{class:'kbtn', onClick:()=> doReduce()},'약분'),
+      h('button',{class:'kbtn red', onClick:()=> backspace()},'←'),
+      h('button',{class:'kbtn red', onClick:()=> clearAll()},'지우기'),
+      h('button',{class:'kbtn green wide', onClick:()=> goNext()},'확인')
+    )
+  );
+
+  function getCur(){ const v = STATE.answers[qIndex] || {whole:'',num:'',den:''}; return {...v}; }
+  function setCur(v){ STATE.answers[qIndex]=v; save(); render(); }
+  function pushNum(d){ const v=getCur(); const field = (v.den? (v.num? 'whole':'num') : (v.num? 'den':'num')); // 간단 로직: 우선 분자→분모 채움, 그다음 정수
+    const key = v.num===''? 'num' : (v.den===''? 'den' : 'whole');
+    const k = key; v[k]=(v[k]||'')+d; setCur(v); }
+  function moveFocus(){ const v=getCur(); if(v.num===''||v.den===''){ const k = v.num===''? 'num':'den'; v[k]=v[k]; setCur(v); return; } }
+  function backspace(){ const v=getCur(); if(v.den){ if(v.den!==''){ v.den=v.den.slice(0,-1); setCur(v); return; } }
+    if(v.num){ if(v.num!==''){ v.num=v.num.slice(0,-1); setCur(v); return; } }
+    if(v.whole){ v.whole=v.whole.slice(0,-1); setCur(v); return; }
+  }
+  function clearAll(){ setCur({whole:'',num:'',den:''}); }
+  function doReduce(){ const v=getCur(); const p = parseFractionInput(v); if(!p){ alert('분수 입력을 확인하세요.'); return; } const r = reduce(p[0],p[1]); const sign = r[0]<0?'-':''; const nn=Math.abs(r[0]); const whole = Math.floor(nn/r[1]); const rem = nn%r[1]; setCur({whole: (sign? sign+whole : String(whole)), num: String(rem), den: String(r[1])}); }
+  function goNext(){ // 단순 유효성 체크
+    const v=getCur(); const p = parseFractionInput(v); if(!p){ alert('정수/분자/분모를 확인해주세요.'); return; }
+    // 자동 약분
+    const r = reduce(p[0],p[1]); setCur({whole:'', num:String(r[0]), den:String(r[1])}); // 표시는 가분수 기약형으로 정규화
+    // 다음 문제로 이동
+    stopTimer(qIndex); STATE.index=Math.min(QUESTIONS.length-1, STATE.index+1); startTimer(); save(); render();
+  }
+
+  return kp;
+}
+
+// ---------- CSV ----------
+function downloadCSV(results, score){
+  const head = ['no','type','my_answer','correct','correctYN','time_s'];
+  const rows = results.map((r,i)=>{
+    return [i+1, QUESTIONS[i].type, r.myDisp, r.corrDisp, r.correct?'O':'X', r.time];
+  });
+  rows.unshift(head);
+  const csv = rows.map(r=> r.map(x=> '"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='fraction_exam_results.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>
