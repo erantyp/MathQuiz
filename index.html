@@ -51,24 +51,24 @@
     <main id="app" class="p16"></main>
   </div>
 <script>
-// ----- 간단 헬퍼 (Array.flat() 비사용) -----
+// --- 안전한 DOM 헬퍼: 이벤트명을 소문자로, Array.flat() 미사용 ---
 const $ = sel => document.querySelector(sel);
 const h = (tag, attrs={}, ...children) => {
   const el = document.createElement(tag);
   for (const k in attrs){
     if(k==='class') el.className=attrs[k];
-    else if(k.startsWith('on') && typeof attrs[k]==='function') el.addEventListener(k.slice(2), attrs[k]);
+    else if(k.startsWith('on') && typeof attrs[k]==='function') el.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
     else if(k==='html') el.innerHTML=attrs[k];
     else el.setAttribute(k, attrs[k]);
   }
-  const appendChild = (c)=>{ if(c==null) return; if(Array.isArray(c)) c.forEach(appendChild); else el.append(c instanceof Node? c : document.createTextNode(String(c))); };
-  children.forEach(appendChild);
+  const add = c=>{ if(c==null) return; if(Array.isArray(c)) c.forEach(add); else el.append(c instanceof Node? c : document.createTextNode(String(c))); };
+  children.forEach(add);
   return el;
 };
 
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
-function toImproper(whole, num, den){ whole=Number(whole||0); num=Number(num||0); den=Number(den||0); if(!den) return null; const n = Math.abs(whole)*den + Math.abs(num); const sign = (whole<0||num<0)?-1:1; return [sign*n, den]; }
-function reduce(n,d){ if(d===0) return null; const g=gcd(n,d); const nn = d<0? -n: n; const dd = Math.abs(d); const g2=gcd(nn,dd); return [nn/g2, dd/g2]; }
+function toImproper(whole, num, den){ whole=Number(whole||0); num=Number(num||0); den=Number(den||0); if(!den) return null; const n=Math.abs(whole)*den+Math.abs(num); const sign=(whole<0||num<0)?-1:1; return [sign*n, den]; }
+function reduce(n,d){ if(d===0) return null; const nn = d<0? -n: n; const dd = Math.abs(d); const g=gcd(Math.abs(nn),dd); return [nn/g, dd/g]; }
 function parseFractionInput(obj){ const {whole,num,den}=obj; if((den===''||den==null) && (num===''||num==null)){ if(whole===''||whole==null) return null; return [Number(whole),1]; } if(!den || Number(den)===0) return null; const [n,d]=toImproper(whole||0, num||0, den||1); if(n==null) return null; return reduce(n,d); }
 function fracEq(a,b){ return a[0]===b[0] && a[1]===b[1]; }
 function fracStr([n,d]){ if(d===1) return String(n); const sign = n<0?'-':''; const nn=Math.abs(n); const whole = Math.floor(nn/d); const rem = nn % d; if(whole>0 && rem>0) return `${sign}${whole} ${rem}/${d}`; if(whole>0 && rem===0) return `${sign}${whole}`; return `${sign}${nn}/${d}`; }
@@ -77,13 +77,13 @@ function toNormFraction(v){
     const s=v.trim();
     if(s.includes('/')){ const [a,b]=s.split('/').map(Number); return reduce(a,b); }
     if(/^[-+]?\d+(\.\d+)?$/.test(s)){ const n=Number(s); return [n,1]; }
-  }
-  if(typeof v==='number'){
+  } else if(typeof v==='number'){
     const s=v.toString(); if(!s.includes('.')) return [v,1];
     const digits=s.split('.')[1].length; const den=10**Math.min(4,digits);
     return reduce(Math.round(v*den), den);
+  } else if(Array.isArray(v)){
+    return reduce(v[0], v[1]);
   }
-  if(Array.isArray(v)) return reduce(v[0], v[1]);
   return null;
 }
 
@@ -140,7 +140,7 @@ function renderInfo(){
       h('div',{class:'col'}, h('label',{},'학년'), h('input',{type:'text',value:STATE.student.grade,oninput:e=>{STATE.student.grade=e.target.value;save();}})),
       h('div',{class:'col'}, h('label',{},'반'), h('input',{type:'text',value:STATE.student.klass,oninput:e=>{STATE.student.klass=e.target.value;save();}})),
       h('div',{class:'col'}, h('label',{},'번호'), h('input',{type:'text',value:STATE.student.number,oninput:e=>{STATE.student.number=e.target.value;save();}})),
-      h('div',{class:'col'}, h('label',{},'이름'), h('input',{type:'text',value:STATE.student.name,oninput:e=>{STATE.student.name=e.target.value;save();}})),
+      h('div',{class:'col'}, h('label',},'이름'), h('input',{type:'text',value:STATE.student.name,oninput:e=>{STATE.student.name=e.target.value;save();}})),
     ),
     h('div',{class:'progress'}, h('div',{},'입력 완료 후 시작을 누르세요.'), h('div',{class:'pill'},'총 문항 20')),
     h('div',{style:'height:12px'}),
@@ -203,9 +203,7 @@ function renderReview(){
   const box = h('div',{class:'card p24'},
     h('h2',{},'결과 확인'),
     h('div',{class:'row',style:'margin:8px 0'}, h('div',{class:'pill'},`점수 ${score}/100`), h('div',{class:'pill'},`정답 ${results.filter(r=>r.correct).length}/20`), h('div',{class:'pill'}, new Date().toLocaleString('ko-KR')) ),
-    h('div',{style:'overflow:auto'},
-      h('table',{}, h('thead',{}, h('tr',{}, h('th',{},'번호'), h('th',{},'내 답'), h('th',{},'정답'), h('th',{},'정오'), h('th',{},'시간(s)'))), h('tbody',{}, results.map(r=> h('tr',{}, h('td',{}, String(r.idx+1)), h('td',{}, r.myDisp), h('td',{}, r.corrDisp), h('td',{}, r.correct? 'O':'X'), h('td',{}, String(r.time)) ))) )
-    ),
+    h('div',{style:'overflow:auto'}, h('table',{}, h('thead',{}, h('tr',{}, h('th',{},'번호'), h('th',{},'내 답'), h('th',{},'정답'), h('th',{},'정오'), h('th',{},'시간(s)'))), h('tbody',{}, results.map(r=> h('tr',{}, h('td',{}, String(r.idx+1)), h('td',{}, r.myDisp), h('td',{}, r.corrDisp), h('td',{}, r.correct? 'O':'X'), h('td',{}, String(r.time)) ))) ) ),
     h('div',{class:'row',style:'margin-top:14px'},
       h('button',{class:'btn', type:'button', onClick:()=>{ STATE.page='exam'; STATE.index=0; save(); render(); }},'돌아가서 확인'),
       h('button',{class:'btn', type:'button', onClick:()=> downloadCSV(results, score) },'CSV 내보내기'),
